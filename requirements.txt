@@ -1,2 +1,4 @@
-lida 
 streamlit
+openai
+st_ant_tree
+matplotlib

@@ -1,13 +1,13 @@
 import streamlit as st
 from st_ant_tree import st_ant_tree
-from lida import Manager, TextGenerationConfig, llm
-from lida.datamodel import Goal
 import os
 import pandas as pd
 import numpy as np
 
-
 from components import utils
+
+import openai
+from openai import OpenAI
 
 
 # make data dir if it doesn't exist
@@ -22,20 +22,24 @@ st.write("# DEMO 📊")
 
 st.sidebar.write("## Setup")
 
-# Step 1 - Get OpenAI API key
+# Step 1 - Get OpenAI API key and base url
 openai_key = os.getenv("OPENAI_API_KEY")
+openai_base_url = os.getenv("OPENAI_BASE_URL")
 
-if not openai_key:
+if not openai_key or not openai_base_url:
     openai_key = st.sidebar.text_input("Enter OpenAI API key:")
-    # base_url = st.sidebar.text_input("Enter OpenAI base url:", value="default")
-    if openai_key:
+    openai_base_url = st.sidebar.text_input("Enter OpenAI base url:", value="default")
+    if openai_key and openai_base_url:
         display_key = openai_key[:2] + "*" * (len(openai_key) - 5) + openai_key[-3:]
         st.sidebar.write(f"Current key: {display_key}")
-    else:
-        st.sidebar.write("Please enter OpenAI API key.")
+        st.sidebar.write(f"Current base url: {openai_base_url}")
 else:
     display_key = openai_key[:2] + "*" * (len(openai_key) - 5) + openai_key[-3:]
+    display_base_url = openai_base_url
     st.sidebar.write(f"OpenAI API key loaded from environment variable: {display_key}")
+    st.sidebar.write(
+        f"OpenAI base url loaded from environment variable: {display_base_url}"
+    )
 
 st.markdown(
     """
@@ -45,8 +49,18 @@ st.markdown(
 """
 )
 
+if openai_base_url == "default":
+    openai_base_url = "https://api.openai.com/v1"
+
+finish_setup = openai_key and openai_base_url
+
 # Step 2 - Select a dataset and summarization method
-if openai_key:
+if finish_setup:
+    client = OpenAI(
+        base_url=openai_base_url,
+        api_key=openai_key,
+    )
+
     # Initialize selected_dataset to None
     selected_dataset = None
 
@@ -161,7 +175,7 @@ if openai_key:
         )
 
 # Step 3 - Generate data summary
-if openai_key and selected_dataset and selected_method:
+if finish_setup and selected_dataset and selected_method:
     st.write("## Summary")
     # **** lida.summarize *****
     summary = utils.get_data_summary(selected_dataset, summary_method=selected_method)
