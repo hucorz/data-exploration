@@ -26,10 +26,7 @@ st.sidebar.write("## Setup")
 openai_key = os.getenv("OPENAI_API_KEY")
 
 if not openai_key:
-    openai_key = st.sidebar.text_input(
-        "Enter OpenAI API key:",
-        value="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",
-    )
+    openai_key = st.sidebar.text_input("Enter OpenAI API key:")
     # base_url = st.sidebar.text_input("Enter OpenAI base url:", value="default")
     if openai_key:
         display_key = openai_key[:2] + "*" * (len(openai_key) - 5) + openai_key[-3:]
@@ -221,5 +218,7 @@ if openai_key and selected_dataset and selected_method:
             "title": "Parent 2",
         },
     ]
-    selected_node = st_ant_tree(tree_data, treeCheckable = False, treeDefaultExpandAll=True)
+    selected_node = st_ant_tree(
+        tree_data, treeCheckable=False, treeDefaultExpandAll=True
+    )
     print(selected_node)
