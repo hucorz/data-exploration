@@ -9,6 +9,7 @@ from components import utils
 import openai
 from openai import OpenAI
 import json
+from PIL import Image
 
 
 # make data dir if it doesn't exist
@@ -183,7 +184,9 @@ if finish_setup:
 if finish_setup and selected_dataset and selected_method:
     st.write("## Summary")
     # **** lida.summarize *****
-    summary = utils.get_data_summary(selected_dataset, summary_method=selected_method)
+    summary = utils.get_data_summary('cars',selected_dataset, summary_method=selected_method)
+
+    print(summary)
 
     field_cnt = len(summary["fields"])
 
@@ -196,8 +199,8 @@ if finish_setup and selected_dataset and selected_method:
         with col_list[row][col]:
             variables = {}
             st.header(summary["fields"][idx]["column"])
-            exec(summary["fields"][idx]["properties"]["code"], variables)
-            st.pyplot(variables["fig"])
+            # exec(summary["fields"][idx]["properties"]["code"], variables)
+            # st.pyplot(variables["fig"])
 
     if "dataset_description" in summary:
         st.write(summary["dataset_description"])
@@ -220,8 +223,49 @@ if finish_setup and selected_dataset and selected_method:
     else:
         st.write(str(summary))
 
+    if "Correlation" in summary:
+        Correlations = summary["Correlation"]
+        nfields_df = pd.DataFrame(Correlations)
+        st.write(nfields_df)
+
     # Step 4 - Start exploring the data
     st.write("## Explore")
+
+    openai_client = OpenAI(
+        base_url=openai_base_url,
+        api_key=openai_key
+    )
+
+    simple_facts = utils.get_fact_from_data_summary(openai_client,summary)
+    st.write(simple_facts)
+
+    st.write("## User selection facts")
+    user_select_simple_facts = [
+        "The 'Type' field categorizes the cars into 5 different categories, with 'Sedan' being the most commonly occurring type. This points to Sedan as the dominant car type in the data represented.",
+        # "The average retail price of the cars in the dataset is approximately $33,253.2, with a standard deviation of $19,766. This sizable standard deviation clearly accentuates the wide price range of the car market captured in the dataset, extending from as low as $10,280 up to an outlier price of $192,465.",
+        # "The relationship between engine size and weight of the cars is quite strong, with a Pearson's correlation of approximately 0.8. This typifies a typical trend in vehicle manufacturing, where larger engines typically contribute to a heavier overall vehicle weight.",
+        # "It is noticeable that there's a significant negative correlation (approximately -0.79) between 'Highway_Miles_Per_Gallon' and 'Weight', indicating that heavier cars tend to have a lower miles per gallon efficiency on highways."
+    ]
+    st.write(user_select_simple_facts)
+
+    st.write("## chart-type")
+
+    for user_select_simple_fact in user_select_simple_facts:
+        chart_type = utils.get_chart_type_from_fact(openai_client,user_select_simple_fact,summary)
+        st.write(chart_type["fact"])
+        st.write(chart_type["data field"])
+        st.write(chart_type["visualization"])
+        st.write(chart_type["rationale"])
+    
+    st.write("## visualization")
+    generated_fact_code = utils.get_chart_code(openai_client,chart_type["visualization"],chart_type["fact"],summary)
+    st.write(generated_fact_code)
+    # 根据代码生成图表
+    chart_file_path = utils.get_chart_file_path(generated_fact_code,f"{'-'.join(chart_type['data field'])}-{chart_type['visualization']}")
+    # 已有图表，显示在网页上
+    image = Image.open(chart_file_path)
+    st.image(image, caption=chart_type["fact"], use_column_width=True)
+
 
     tree_data = [
         {
