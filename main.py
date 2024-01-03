@@ -8,6 +8,7 @@ from components import utils
 
 import openai
 from openai import OpenAI
+import json
 
 
 # make data dir if it doesn't exist
@@ -23,8 +24,12 @@ st.write("# DEMO 📊")
 st.sidebar.write("## Setup")
 
 # Step 1 - Get OpenAI API key and base url
-openai_key = os.getenv("OPENAI_API_KEY")
-openai_base_url = os.getenv("OPENAI_BASE_URL")
+with open('./openai_setup.json', 'r') as f:
+    openai_setup = json.load(f)
+    openai_key = openai_setup["openai_key"]
+    openai_base_url = openai_setup["openai_base_url"]
+# openai_base_url = os.environ.get("OPENAI_BASE_URL")
+print("===========",openai_key,openai_base_url)
 
 if not openai_key or not openai_base_url:
     openai_key = st.sidebar.text_input("Enter OpenAI API key:")
